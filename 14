@@ -1,0 +1,183 @@
+1) public class ExceptionTaskMain {
+
+    public static void main(String[] args) {
+        System.out.println("Этот вызов бросает нужное исключение: " +
+                ExceptionTask.invokesException(IllegalArgumentException.class, () -> {
+                    throw new IllegalArgumentException();
+                }));
+        System.out.println("Этот вызов не бросает исключение: " +
+                ExceptionTask.invokesException(IllegalArgumentException.class, () -> {
+                    var a = 2 * 2;
+                }));
+        System.out.println("Этот вызов бросает не то исключение: " +
+                ExceptionTask.invokesException(IllegalArgumentException.class, () -> {
+                    throw new ArrayIndexOutOfBoundsException();
+                }));
+    }
+
+}
+
+interface Callable {
+    void call();
+}
+
+class ExceptionTask {
+    private ExceptionTask() {
+    }
+
+    public static <T extends Throwable> boolean invokesException(Class<T> clazz, Callable callable) {
+        try {
+            // Выполнение переданного кода
+            callable.call();
+            // Если исключение не выброшено, возвращаем false
+            return false;
+        } catch (Throwable ex) {
+            // Если исключение выброшено, проверяем, соответствует ли оно типу clazz
+            return clazz.isInstance(ex);
+        }
+    }
+}
+
+2) import java.util.Arrays;
+
+public class ExceptionTaskDivide {
+    private ExceptionTaskDivide() {}
+
+    public static int[] divide(int... numbers) {
+        // Проверка чётности количества элементов
+        if (numbers.length % 2 != 0) {
+            throw new IllegalArgumentException("Количество элементов должно быть чётным");
+        }
+
+        // Массив для результатов делений
+        int[] results = new int[numbers.length / 2];
+
+        // Проход по всем парам элементов
+        for (int i = 0; i < numbers.length; i += 2) {
+            try {
+                // Делим попарно и записываем результат
+                results[i / 2] = numbers[i] / numbers[i + 1];
+            } catch (ArithmeticException e) {
+                // Если делитель 0, результат будет 0
+                results[i / 2] = 0;
+            }
+        }
+
+        return results;
+    }
+
+    public static void main(String[] args) {
+        // Примеры использования метода divide
+        System.out.println("Делим попарно 4, 2, 4, 1: " + Arrays.toString(divide(4, 2, 4, 1))); 
+        System.out.println("Делим попарно 0, 2, 0, 0: " + Arrays.toString(divide(0, 2, 0, 0))); 
+        System.out.println("Делим попарно 5, 0, 4, 2: " + Arrays.toString(divide(5, 0, 4, 2))); // Пример с делением на 0
+    }
+}
+
+3)  public class ExceptionTaskBuggyMethod { 
+    private ExceptionTaskBuggyMethod(){} 
+
+    public static int buggyMethod(Integer[] inputNumbers) { 
+        // Проверка на null
+        if (inputNumbers == null) {
+            System.out.println("Входной массив равен null.");
+            return 0; // Возвращаем 0, если массив равен null
+        }
+
+        int result = 0; 
+        for (var item : inputNumbers) { 
+            try {
+                // Пытаемся выполнить операцию и добавляем результат
+                result += (item + 1) / item;
+            } catch (ArithmeticException e) {
+                // Если деление на 0, результат итерации будет 0
+                System.out.println("Ошибка при делении на 0, результат итерации = 0");
+                result += 0;
+            } catch (NullPointerException e) {
+                // Если элемент массива равен null, результат итерации будет 0
+                System.out.println("Ошибка: элемент массива равен null, результат итерации = 0");
+                result += 0;
+            } catch (Exception e) {
+                // Если происходит другая ошибка, результат итерации = 0
+                System.out.println("Неизвестная ошибка: " + e.getMessage() + ", результат итерации = 0");
+                result += 0;
+            }
+        } 
+        return result; 
+    } 
+
+    public static void main(String[] args) { 
+        System.out.println("Результат для null: " + buggyMethod(null)); 
+        System.out.println("Результат для [1, 0]: " + buggyMethod(new Integer[]{1, 0})); 
+        System.out.println("Результат для [1, 2, 3]: " + buggyMethod(new Integer[]{1, 2, 3})); // Пример без ошибок
+    } 
+}
+
+4)  public class ExceptionTaskCustomException { 
+    public static int simpleAbs(int left, int right) throws CustomException { 
+        if (left < right) { 
+            throw new CustomException("my custom exception"); 
+        } 
+        return Math.abs(left - right); // Возвращаем абсолютную разницу
+    } 
+
+    public static void main(String[] args) throws Exception { 
+        System.out.println("No exception: " + simpleAbs(3, 2)); 
+        try { 
+            System.out.println("Exception: " + simpleAbs(1, 2)); 
+            System.out.println("Исключение не брошено, ошибка!"); 
+        } catch (CustomException e) { 
+            System.out.println("Успешно брошено исключение: " + e.getMessage()); 
+        } 
+    } 
+} 
+
+// Создание класса CustomException, который наследует от Exception
+class CustomException extends Exception { 
+    // Конструктор, который передаёт сообщение в родительский класс
+    public CustomException(String message) {
+        super(message); 
+    }
+}
+
+5) import java.util.ArrayList;
+import java.util.Arrays;
+
+public class ExceptionTaskGetAllElements {
+
+    // Метод для обработки строки
+    private static String processString(String item) {
+        if (item.contains("Ю")) {
+            throw new IllegalArgumentException("Обнаружена буква Ю!");
+        }
+        if (item.contains("Ё")) {
+            throw new NullPointerException("Ё не разрешено!");
+        }
+        return item; // Возвращаем сам элемент, если ошибок нет
+    }
+
+    // Основной метод, который обрабатывает массив строк
+    public static String[] getAllElements(String[] input) {
+        var result = new ArrayList<String>(input.length); // Список для хранения результата
+
+        for (String item : input) {
+            try {
+                // Пытаемся обработать строку
+                result.add(processString(item));
+            } catch (IllegalArgumentException | NullPointerException e) {
+                // Если возникла ошибка, добавляем сообщение исключения
+                result.add("Ошибка: " + e.getMessage());
+            }
+            // После каждой итерации добавляем строку "end"
+            result.add("end");
+        }
+
+        // Преобразуем список в массив и возвращаем
+        return result.toArray(new String[0]);
+    }
+
+    public static void main(String[] args) {
+        // Пример использования
+        System.out.println(Arrays.toString(getAllElements(new String[]{"Ю", "б", "в", "Ю", "Д", "ЁЖ"})));
+    }
+}
